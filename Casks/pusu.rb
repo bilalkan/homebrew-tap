@@ -1,6 +1,6 @@
 cask "pusu" do
-  version "1.0.1"
-  sha256 "b806cfd1cbc847ef5a662b4eca46aa5ebfa54bc11a07a398e16394862c008e52"
+  version "1.0.2"
+  sha256 "07413d8e414994d4ef2dd92d5fa11195618f47fba06c6d37503189188ac75f33"
 
   url "https://github.com/bilalkan/pusu/releases/download/v#{version}/Pusu-#{version}.zip"
   name "Pusu"
@@ -18,38 +18,42 @@ cask "pusu" do
     run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "Pusu.app"], chdir: "."
   end
 
-  # Yardımcı durdurulurken SleepDisabled'ı kendi eski değerine döndürür. Yardımcı zaten
-  # durmuşsa önce kayıtlı eski değer (yalnızca 0/1) buradan geri yüklenir.
-  uninstall_preflight_steps do
-    run "/bin/sh",
+  # Normal kaldırma ve güncelleme yalnızca uygulamayı kapatır; böylece brew upgrade
+  # yönetici yardımcısını silmez ve parola sormaz. Yardımcı, uygulama 15 dakika boyunca
+  # ortada olmazsa SleepDisabled'ı geri yükleyip kendini kaldırır. --zap hemen kaldırır
+  # (launchctl bootout yardımcıya SIGTERM gönderir, o da SleepDisabled'ı geri yükler).
+  uninstall quit: "local.kan.pusu"
+
+  # Yardımcı çalışmıyor olsa da kayıtlı eski değer (yalnızca 0/1) silinmeden önce geri yüklenir.
+  zap launchctl: "local.kan.pusu.helper",
+      script:    {
+        executable:   "/bin/sh",
         args:         [
           "-c",
           "S=/var/db/local.kan.pusu.helper.state; [ -f $S ] || exit 0; V=$(/bin/cat $S); " \
           "case $V in 0|1) /usr/bin/pmset -a disablesleep $V;; esac",
         ],
         sudo:         true,
-        must_succeed: false
-  end
-
-  uninstall launchctl: "local.kan.pusu.helper",
-            quit:      "local.kan.pusu",
-            delete:    [
-              "/Library/LaunchDaemons/local.kan.pusu.helper.plist",
-              "/Library/PrivilegedHelperTools/local.kan.pusu.helper",
-              "/var/db/local.kan.pusu.helper.state",
-              "/var/log/local.kan.pusu.helper.log",
-              "/var/run/local.kan.pusu.helper.sock",
-            ]
-
-  zap trash: [
-    "~/Library/Application Support/Pusu",
-    "~/Library/LaunchAgents/local.kan.pusu.login.plist",
-    "~/Library/Preferences/local.kan.pusu.plist",
-  ]
+        must_succeed: false,
+      },
+      delete:    [
+        "/Library/LaunchDaemons/local.kan.pusu.helper.plist",
+        "/Library/PrivilegedHelperTools/local.kan.pusu.helper",
+        "/var/db/local.kan.pusu.helper.state",
+        "/var/log/local.kan.pusu.helper.log",
+        "/var/run/local.kan.pusu.helper.sock",
+      ],
+      trash:     [
+        "~/Library/Application Support/Pusu",
+        "~/Library/LaunchAgents/local.kan.pusu.login.plist",
+        "~/Library/Preferences/local.kan.pusu.plist",
+      ]
 
   caveats <<~EOS
     Pusu is not notarized by Apple. The cask removes the quarantine flag so it opens normally.
     Lid mode needs administrator rights; install the optional helper from Settings › System.
+    Upgrades keep the helper. After `brew uninstall`, the helper restores SleepDisabled and
+    removes itself about 15 minutes later; `brew uninstall --zap` removes it right away.
     If you use lid mode without the helper, turn it off in Pusu before uninstalling;
     otherwise run `sudo pmset -a disablesleep 0` afterwards.
   EOS
