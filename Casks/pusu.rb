@@ -1,6 +1,6 @@
 cask "pusu" do
-  version "1.0.2"
-  sha256 "07413d8e414994d4ef2dd92d5fa11195618f47fba06c6d37503189188ac75f33"
+  version "1.0.3"
+  sha256 "b20be532a11d7cc75d8ca6cbb70e8780659bda8f539685a6aface96ddb795353"
 
   url "https://github.com/bilalkan/pusu/releases/download/v#{version}/Pusu-#{version}.zip"
   name "Pusu"
