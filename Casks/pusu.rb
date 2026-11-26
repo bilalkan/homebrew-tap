@@ -1,12 +1,14 @@
 cask "pusu" do
-  version "1.0.7"
-  sha256 "20139709033cb4a84949020c569c26fb46d14ac1994068a2f00339017cd9e5df"
+  version "1.0.8"
+  sha256 "679893103bef11ce79b2ea386c378f23adab18100e801300610b8c2f70d41aad"
 
   url "https://github.com/bilalkan/pusu/releases/download/v#{version}/Pusu-#{version}.zip"
   name "Pusu"
   desc "Menu bar app that keeps the system awake"
   homepage "https://github.com/bilalkan/pusu"
 
+  # Pusu kendini Sparkle ile günceller; brew upgrade bu yüzden atlar (--greedy hariç).
+  auto_updates true
   depends_on macos: :ventura
 
   app "Pusu.app"
